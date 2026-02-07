@@ -5,9 +5,6 @@
   vars:
     component: shipping
 
-
-
-
 # ---------------- DB OPERATIONS ----------------
 
 - name: Load DB schema (run as roboshop)
