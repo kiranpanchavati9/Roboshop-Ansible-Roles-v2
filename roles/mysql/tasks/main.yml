@@ -13,11 +13,10 @@
     name: mysqld
     state: started
 
-- name: Set MySQL root password and authentication plugin
+- name: Set MySQL root password
   ansible.builtin.shell: |
     mysql -uroot -p{{ mysql_root_password }} <<EOF
-    ALTER USER 'root'@'localhost'
-    IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';
+    ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';
     FLUSH PRIVILEGES;
     EOF
   args:
@@ -25,3 +24,26 @@
   register: mysql_password_change
   failed_when: false
   changed_when: false
+
+- name: Allow MySQL to listen on all interfaces
+  ansible.builtin.lineinfile:
+    path: /etc/my.cnf.d/mysql-server.cnf
+    regexp: '^bind-address'
+    line: 'bind-address = 0.0.0.0'
+  register: mysql_config
+
+- name: Restart MySQL if config changed
+  ansible.builtin.service:
+    name: mysqld
+    state: restarted
+  when: mysql_config.changed
+
+- name: Create roboshop user for remote access
+  ansible.builtin.shell: |
+    mysql -uroot -p{{ mysql_root_password }} <<EOF
+    CREATE USER IF NOT EXISTS 'roboshop'@'%' IDENTIFIED WITH mysql_native_password BY 'RoboShop@1';
+    GRANT ALL PRIVILEGES ON *.* TO 'roboshop'@'%' WITH GRANT OPTION;
+    FLUSH PRIVILEGES;
+    EOF
+  args:
+    executable: /bin/bash
