@@ -14,42 +14,8 @@
       - unzip
     state: present
 
-####################################################################
-# 2. Create roboshop user
-####################################################################
-- name: Create roboshop user
-  ansible.builtin.user:
-    name: roboshop
-    create_home: yes
-
-####################################################################
-# 3. Copy Cart systemd service file
-####################################################################
-- name: Copy {{component}} systemd service file
-  ansible.builtin.copy:
-    src: "{{component}}.service"
-    dest: /etc/systemd/system/{{component}}.service
-
-####################################################################
-# 4. Create /app directory
-####################################################################
-- name: Create /app directory
-  ansible.builtin.file:
-    path: /app
-    state: directory
-    owner: roboshop
-    group: roboshop
-
-####################################################################
-# 5. Download and extract {{component}}  application
-####################################################################
-- name: Download and extract {{component}}  application code
-  ansible.builtin.unarchive:
-    src: https://roboshop-artifacts.s3.amazonaws.com/{{component}}-v3.zip
-    dest: /app
-    remote_src: yes
-    owner: roboshop
-    group: roboshop
+- name: App Pre-requisites - Load
+  ansible.builtin.import_tasks: app_prereqs.yml
 
 ####################################################################
 # 6. Install NodeJS dependencies
@@ -60,18 +26,5 @@
     chdir: /app
   become_user: roboshop
 
-####################################################################
-# 7. Reload systemd
-####################################################################
-- name: Reload systemd daemon
-  ansible.builtin.systemd:
-    daemon_reload: yes
-
-####################################################################
-# 8. Enable and restart {{component}}  service
-####################################################################
-- name: Enable and restart {{component}}  service
-  ansible.builtin.systemd:
-    name: "{{component}}"
-    state: restarted
-    enabled: yes
+- name: Load the Systemd File
+  ansible.builtin.import_tasks: systemd.yml
