@@ -3,42 +3,29 @@
     name: mysql-server
     state: present
 
-- name: Enable MySQL service
-  ansible.builtin.service:
-    name: mysqld
-    enabled: yes
-
-- name: Start MySQL service
+- name: Start and Enable MySQL
   ansible.builtin.service:
     name: mysqld
     state: started
+    enabled: yes
 
-- name: Set MySQL root password
+- name: Ensure Root Password is Set
   ansible.builtin.shell: |
-    mysql -uroot -p{{ mysql_root_password }} <<EOF
-    ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';
-    FLUSH PRIVILEGES;
-    EOF
+    mysql -uroot -p{{ mysql_root_password }} -e "QUIT" || \
+    mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}'; FLUSH PRIVILEGES;"
   args:
     executable: /bin/bash
-  register: mysql_password_change
+  register: root_pass_setup
   failed_when: false
-  changed_when: false
 
-- name: Allow MySQL to listen on all interfaces
+- name: Allow Remote Connections
   ansible.builtin.lineinfile:
     path: /etc/my.cnf.d/mysql-server.cnf
     regexp: '^bind-address'
     line: 'bind-address = 0.0.0.0'
-  register: mysql_config
+  notify: Restart MySQL
 
-- name: Restart MySQL if config changed
-  ansible.builtin.service:
-    name: mysqld
-    state: restarted
-  when: mysql_config.changed
-
-- name: Create roboshop user for remote access
+- name: Create Roboshop User
   ansible.builtin.shell: |
     mysql -uroot -p{{ mysql_root_password }} <<EOF
     CREATE USER IF NOT EXISTS 'roboshop'@'%' IDENTIFIED WITH mysql_native_password BY 'RoboShop@1';
