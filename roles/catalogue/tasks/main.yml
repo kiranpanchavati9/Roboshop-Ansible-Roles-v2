@@ -2,6 +2,8 @@
   ansible.builtin.import_role:
     name: common
     tasks_from: nodejs
+    vars:
+      component: catalogue
 
 # ---------------- REPOSITORY SETUP ----------------
 - name: Copy MongoDB repo file
