@@ -24,7 +24,7 @@
   become_user: roboshop
 
 - name: Rename shipping jar
-  ansible.builtin.command: mv target/shipping-1.0.jar shipping.jar
+  ansible.builtin.command: mv target/{{component}}-1.0.jar {{component}}.jar
   args:
     chdir: /app
   become_user: roboshop
